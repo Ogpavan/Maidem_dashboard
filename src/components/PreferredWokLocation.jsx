@@ -16,10 +16,7 @@ const PreferredWorkLocation = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
-  useEffect(() => {
-    fetchLocations();
-  }, []);
-
+  // Define fetchLocations outside useEffect
   const fetchLocations = async () => {
     const querySnapshot = await getDocs(
       collection(db, "preferred_work_location")
@@ -31,20 +28,59 @@ const PreferredWorkLocation = () => {
     setLocations(locationsData);
   };
 
+  useEffect(() => {
+    fetchLocations();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (city && localities.length) {
+      // Check for duplicate localities
+      const localityNames = localities.map((locality) =>
+        locality.name.trim().toLowerCase()
+      );
+      const hasDuplicateLocalities =
+        new Set(localityNames).size !== localityNames.length;
+
+      if (hasDuplicateLocalities) {
+        alert(
+          "Duplicate localities found. Please ensure all locality names are unique."
+        );
+        return;
+      }
+
+      // Check for duplicate sectors within each locality
+      for (const locality of localities) {
+        const sectorNames = locality.sectors.map((sector) =>
+          sector.trim().toLowerCase()
+        );
+        const hasDuplicateSectors =
+          new Set(sectorNames).size !== sectorNames.length;
+
+        if (hasDuplicateSectors) {
+          alert(
+            `Duplicate sectors found in locality "${locality.name}". Please ensure all sector names are unique.`
+          );
+          return;
+        }
+      }
+
       try {
+        const data = {
+          city,
+          localities: localities.map((locality) => ({
+            name: locality.name,
+            sectors: Array.from(new Set(locality.sectors)),
+          })),
+        };
+
         if (isEditing) {
           const locationDoc = doc(db, "preferred_work_location", editingId);
-          await updateDoc(locationDoc, { city, localities });
+          await updateDoc(locationDoc, data);
           alert("Location updated successfully!");
         } else {
-          await addDoc(collection(db, "preferred_work_location"), {
-            city,
-            localities,
-          });
+          await addDoc(collection(db, "preferred_work_location"), data);
           alert("Location added successfully!");
         }
 
@@ -52,7 +88,7 @@ const PreferredWorkLocation = () => {
         setLocalities([{ name: "", sectors: [""] }]);
         setIsEditing(false);
         setEditingId(null);
-        fetchLocations();
+        fetchLocations(); // Fetch locations after submit
       } catch (error) {
         console.error("Error saving location: ", error);
         alert("Failed to save location. Try again.");
@@ -67,7 +103,7 @@ const PreferredWorkLocation = () => {
       const locationDoc = doc(db, "preferred_work_location", id);
       await deleteDoc(locationDoc);
       alert("Location deleted successfully!");
-      fetchLocations();
+      fetchLocations(); // Fetch locations after deletion
     } catch (error) {
       console.error("Error deleting location: ", error);
       alert("Failed to delete location. Try again.");
@@ -76,16 +112,22 @@ const PreferredWorkLocation = () => {
 
   const handleEdit = (location) => {
     setCity(location.city);
-    setLocalities(location.localities);
+    setLocalities(
+      location.localities.map((locality) => ({
+        name: locality.name,
+        sectors: Array.from(new Set(locality.sectors)),
+      }))
+    );
     setIsEditing(true);
     setEditingId(location.id);
   };
 
   const addLocality = () =>
     setLocalities([...localities, { name: "", sectors: [""] }]);
-  const addSectorToLocality = (index) => {
+
+  const addSector = (localityIndex) => {
     const newLocalities = [...localities];
-    newLocalities[index].sectors.push("");
+    newLocalities[localityIndex].sectors.push("");
     setLocalities(newLocalities);
   };
 
@@ -123,7 +165,7 @@ const PreferredWorkLocation = () => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700">
-            Localities
+            Localities and Sectors
           </label>
           {localities.map((locality, localityIndex) => (
             <div key={localityIndex} className="mt-4">
@@ -133,48 +175,44 @@ const PreferredWorkLocation = () => {
                 onChange={(e) =>
                   handleLocalityChange(localityIndex, e.target.value)
                 }
-                className="block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300"
-                placeholder="Enter locality"
+                className="block w-full px-3 py-2 mb-2 border rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300"
+                placeholder="Enter locality name"
               />
-              <div className="mt-2">
-                {locality.sectors.map((sector, sectorIndex) => (
-                  <div key={sectorIndex} className="flex items-center mt-1">
-                    <input
-                      type="text"
-                      value={sector}
-                      onChange={(e) =>
-                        handleSectorChange(
-                          localityIndex,
-                          sectorIndex,
-                          e.target.value
-                        )
-                      }
-                      className="block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300"
-                      placeholder="Enter sector"
-                    />
-                    {sectorIndex === locality.sectors.length - 1 && (
-                      <button
-                        type="button"
-                        onClick={() => addSectorToLocality(localityIndex)}
-                        className="ml-2 px-4 py-2 bg-black text-white rounded-md text-nowrap"
-                      >
-                        Add Sector
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-              {localityIndex === localities.length - 1 && (
-                <button
-                  type="button"
-                  onClick={addLocality}
-                  className="mt-2 px-3 py-1 bg-white text-black rounded-md"
-                >
-                  Add Locality
-                </button>
-              )}
+              {locality.sectors.map((sector, sectorIndex) => (
+                <div key={sectorIndex} className="flex items-center mt-1">
+                  <input
+                    type="text"
+                    value={sector}
+                    onChange={(e) =>
+                      handleSectorChange(
+                        localityIndex,
+                        sectorIndex,
+                        e.target.value
+                      )
+                    }
+                    className="block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300"
+                    placeholder="Enter sector"
+                  />
+                  {sectorIndex === locality.sectors.length - 1 && (
+                    <button
+                      type="button"
+                      onClick={() => addSector(localityIndex)}
+                      className="ml-2 px-4 py-2 bg-black text-white rounded-md text-nowrap"
+                    >
+                      Add Sector
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
           ))}
+          <button
+            type="button"
+            onClick={addLocality}
+            className="mt-2 px-3 py-2 bg-white text-black rounded-md"
+          >
+            Add Locality
+          </button>
         </div>
 
         <button
@@ -198,10 +236,9 @@ const PreferredWorkLocation = () => {
             <tr key={location.id}>
               <td className="px-4 py-2 border">{location.city}</td>
               <td className="px-4 py-2 border">
-                {location.localities.map((locality, index) => (
-                  <div key={index} className="mb-2">
-                    <strong>{locality.name}:</strong>{" "}
-                    {locality.sectors.join(", ")}
+                {location.localities.map((loc, idx) => (
+                  <div key={idx}>
+                    <strong>{loc.name}</strong>: {loc.sectors.join(", ")}
                   </div>
                 ))}
               </td>

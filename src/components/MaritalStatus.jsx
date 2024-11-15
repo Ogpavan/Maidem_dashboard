@@ -35,12 +35,10 @@ const MaritalStatus = () => {
     if (statusName.trim()) {
       try {
         if (isEditing) {
-          // Update existing status
           const statusDoc = doc(db, "marital_statuses", editingId);
           await updateDoc(statusDoc, { statusName });
           alert("Status updated successfully!");
         } else {
-          // Add new status
           await addDoc(collection(db, "marital_statuses"), {
             statusName,
             createdAt: new Date().toISOString(),
@@ -48,7 +46,6 @@ const MaritalStatus = () => {
           alert("Status added successfully!");
         }
 
-        // Reset form and refresh list
         setStatusName("");
         setIsEditing(false);
         setEditingId(null);
@@ -128,7 +125,6 @@ const MaritalStatus = () => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-3 border-b text-gray-900">Status Name</th>
-              <th className="px-4 py-3 border-b text-gray-900">Type</th>
               <th className="px-4 py-3 border-b text-gray-900">Actions</th>
             </tr>
           </thead>
@@ -136,7 +132,6 @@ const MaritalStatus = () => {
             {statuses.map((status) => (
               <tr key={status.id} className="border-b hover:bg-gray-50">
                 <td className="px-4 py-3">{status.statusName}</td>
-                <td className="px-4 py-3 text-gray-600">(string)</td>
                 <td className="px-4 py-3 space-x-2">
                   <button
                     onClick={() => handleEdit(status)}

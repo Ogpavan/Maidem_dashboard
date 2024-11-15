@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { useLocation } from "react-router-dom";
+import logo from "../assets/logo.png";
 
 const Navbar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -42,7 +43,8 @@ const Navbar = () => {
       >
         {/* Logo area */}
         <div className="flex items-center justify-between h-16 px-4 border-b ">
-          <span className="text-xl font-semibold text-white">Dashboard</span>
+          <img src={logo} alt="Logo" className="" />
+
           <button
             onClick={() => setIsCollapsed(true)}
             className="p-1 rounded-lg hover:bg-gray-100 hover:text-black lg:hidden"
