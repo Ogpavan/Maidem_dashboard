@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import { Menu, X } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { LogOut, Menu, X } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom"; // Import `useNavigate` for redirection
 import logo from "../assets/logo.png";
 
-const Navbar = () => {
+const Navbar = ({ onLogout }) => {
+  // Add `onLogout` as a prop
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate(); // To navigate to the login page
 
   const menuItems = [
     { title: "Availability Slots", href: "/" },
@@ -19,6 +21,12 @@ const Navbar = () => {
     { title: "Preferred Languages", href: "/preferredlanguages" },
     { title: "Preferred Work Locations", href: "/preferredworklocations" },
   ];
+
+  const handleLogout = () => {
+    localStorage.removeItem("isAuthenticated"); // Remove authentication status from localStorage
+    navigate("/login"); // Redirect to the login page
+    onLogout && onLogout(); // Call the onLogout prop if it exists
+  };
 
   return (
     <div className="relative">
@@ -74,6 +82,14 @@ const Navbar = () => {
           </div>
 
           {/* Logout button at bottom */}
+          <div className="mt-auto mb-4">
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2  bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700"
+            >
+              <LogOut />
+            </button>
+          </div>
         </nav>
       </aside>
 
