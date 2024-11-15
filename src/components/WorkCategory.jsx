@@ -15,6 +15,9 @@ const WorkCategory = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
+  // Default categories that cannot be deleted
+  const defaultCategories = ["12 Hours", "24 Hours", "Job Work"];
+
   // Fetch work categories from Firestore
   useEffect(() => {
     const fetchCategories = async () => {
@@ -59,8 +62,14 @@ const WorkCategory = () => {
     }
   };
 
-  // Handle category deletion
+  // Handle category deletion (excluding default categories)
   const handleDelete = async (id) => {
+    const categoryToDelete = categories.find((cat) => cat.id === id);
+    if (defaultCategories.includes(categoryToDelete.category)) {
+      alert("This category cannot be deleted.");
+      return;
+    }
+
     try {
       const categoryDoc = doc(db, "work_category", id);
       await deleteDoc(categoryDoc);
@@ -134,11 +143,19 @@ const WorkCategory = () => {
                 >
                   Edit
                 </button>
+                {/* Disable Delete for default categories */}
                 <button
                   onClick={() => handleDelete(category.id)}
-                  className="px-8 py-2 bg-red-500 text-white text-sm rounded-md font-semibold hover:bg-red-500/[0.8] hover:shadow-lg"
+                  className={`px-8 py-2 text-sm rounded-md font-semibold hover:shadow-lg ${
+                    defaultCategories.includes(category.category)
+                      ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                      : "bg-red-500 text-white hover:bg-red-500/[0.8]"
+                  }`}
+                  disabled={defaultCategories.includes(category.category)}
                 >
-                  Delete
+                  {defaultCategories.includes(category.category)
+                    ? "Cannot Delete"
+                    : "Delete"}
                 </button>
               </td>
             </tr>

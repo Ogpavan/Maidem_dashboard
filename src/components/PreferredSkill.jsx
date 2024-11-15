@@ -10,10 +10,16 @@ import {
 import { db } from "../config/firebase";
 
 const PreferredSkill = () => {
-  const [skills, setSkills] = useState([]);
+  const [skills, setSkills] = useState([
+    { skill: "Cleaning", id: "default1" },
+    { skill: "Cooking", id: "default2" },
+  ]);
   const [skill, setSkill] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
+  // Default skills that cannot be deleted
+  const defaultSkills = ["Cleaning", "Cooking"];
 
   // Fetch preferred skills from Firestore
   useEffect(() => {
@@ -23,7 +29,7 @@ const PreferredSkill = () => {
         id: doc.id,
         ...doc.data(),
       }));
-      setSkills(skillsData);
+      setSkills((prevSkills) => [...prevSkills, ...skillsData]);
     };
     fetchSkills();
   }, []);
@@ -59,8 +65,14 @@ const PreferredSkill = () => {
     }
   };
 
-  // Handle skill deletion
+  // Handle skill deletion (excluding default skills)
   const handleDelete = async (id) => {
+    const skillToDelete = skills.find((skill) => skill.id === id);
+    if (defaultSkills.includes(skillToDelete.skill)) {
+      alert("This skill cannot be deleted.");
+      return;
+    }
+
     try {
       const skillDoc = doc(db, "preferred_skills", id);
       await deleteDoc(skillDoc);
@@ -86,7 +98,7 @@ const PreferredSkill = () => {
       id: doc.id,
       ...doc.data(),
     }));
-    setSkills(skillsData);
+    setSkills((prevSkills) => [...prevSkills, ...skillsData]);
   };
 
   return (
@@ -118,7 +130,7 @@ const PreferredSkill = () => {
       </form>
 
       {/* List of Preferred Skills */}
-      <table className="w-full text-left bg-white rounded-md shadow-lg ">
+      <table className="w-full text-left bg-white rounded-md shadow-lg">
         <thead>
           <tr>
             <th className="px-4 py-2 border border-r">Skill</th>
@@ -136,11 +148,19 @@ const PreferredSkill = () => {
                 >
                   Edit
                 </button>
+                {/* Disable Delete for default skills */}
                 <button
                   onClick={() => handleDelete(skill.id)}
-                  className="px-8 py-2 bg-red-500 text-white text-sm rounded-md font-semibold hover:bg-red-500/[0.8] hover:shadow-lg"
+                  className={`px-8 py-2 text-sm rounded-md font-semibold hover:shadow-lg ${
+                    defaultSkills.includes(skill.skill)
+                      ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                      : "bg-red-500 text-white hover:bg-red-500/[0.8]"
+                  }`}
+                  disabled={defaultSkills.includes(skill.skill)}
                 >
-                  Delete
+                  {defaultSkills.includes(skill.skill)
+                    ? "Cannot Delete"
+                    : "Delete"}
                 </button>
               </td>
             </tr>
