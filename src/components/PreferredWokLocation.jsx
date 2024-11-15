@@ -12,46 +12,44 @@ import { db } from "../config/firebase";
 const PreferredWorkLocation = () => {
   const [locations, setLocations] = useState([]);
   const [city, setCity] = useState("");
-  const [localities, setLocalities] = useState([""]);
-  const [sectors, setSectors] = useState([""]);
+  const [localities, setLocalities] = useState([{ name: "", sectors: [""] }]);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
-    const fetchLocations = async () => {
-      const querySnapshot = await getDocs(
-        collection(db, "preferred_work_location")
-      );
-      const locationsData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setLocations(locationsData);
-    };
     fetchLocations();
   }, []);
+
+  const fetchLocations = async () => {
+    const querySnapshot = await getDocs(
+      collection(db, "preferred_work_location")
+    );
+    const locationsData = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    setLocations(locationsData);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (city && localities.length && sectors.length) {
+    if (city && localities.length) {
       try {
         if (isEditing) {
           const locationDoc = doc(db, "preferred_work_location", editingId);
-          await updateDoc(locationDoc, { city, localities, sectors });
+          await updateDoc(locationDoc, { city, localities });
           alert("Location updated successfully!");
         } else {
           await addDoc(collection(db, "preferred_work_location"), {
             city,
             localities,
-            sectors,
           });
           alert("Location added successfully!");
         }
 
         setCity("");
-        setLocalities([""]);
-        setSectors([""]);
+        setLocalities([{ name: "", sectors: [""] }]);
         setIsEditing(false);
         setEditingId(null);
         fetchLocations();
@@ -79,35 +77,28 @@ const PreferredWorkLocation = () => {
   const handleEdit = (location) => {
     setCity(location.city);
     setLocalities(location.localities);
-    setSectors(location.sectors);
     setIsEditing(true);
     setEditingId(location.id);
   };
 
-  const fetchLocations = async () => {
-    const querySnapshot = await getDocs(
-      collection(db, "preferred_work_location")
-    );
-    const locationsData = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setLocations(locationsData);
-  };
-
-  const addLocality = () => setLocalities([...localities, ""]);
-  const addSector = () => setSectors([...sectors, ""]);
-
-  const handleLocalityChange = (index, value) => {
+  const addLocality = () =>
+    setLocalities([...localities, { name: "", sectors: [""] }]);
+  const addSectorToLocality = (index) => {
     const newLocalities = [...localities];
-    newLocalities[index] = value;
+    newLocalities[index].sectors.push("");
     setLocalities(newLocalities);
   };
 
-  const handleSectorChange = (index, value) => {
-    const newSectors = [...sectors];
-    newSectors[index] = value;
-    setSectors(newSectors);
+  const handleLocalityChange = (index, value) => {
+    const newLocalities = [...localities];
+    newLocalities[index].name = value;
+    setLocalities(newLocalities);
+  };
+
+  const handleSectorChange = (localityIndex, sectorIndex, value) => {
+    const newLocalities = [...localities];
+    newLocalities[localityIndex].sectors[sectorIndex] = value;
+    setLocalities(newLocalities);
   };
 
   return (
@@ -134,48 +125,52 @@ const PreferredWorkLocation = () => {
           <label className="block text-sm font-medium text-gray-700">
             Localities
           </label>
-          {localities.map((locality, index) => (
-            <div key={index} className="flex items-center mt-1">
+          {localities.map((locality, localityIndex) => (
+            <div key={localityIndex} className="mt-4">
               <input
                 type="text"
-                value={locality}
-                onChange={(e) => handleLocalityChange(index, e.target.value)}
+                value={locality.name}
+                onChange={(e) =>
+                  handleLocalityChange(localityIndex, e.target.value)
+                }
                 className="block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300"
                 placeholder="Enter locality"
               />
-              {index === localities.length - 1 && (
+              <div className="mt-2">
+                {locality.sectors.map((sector, sectorIndex) => (
+                  <div key={sectorIndex} className="flex items-center mt-1">
+                    <input
+                      type="text"
+                      value={sector}
+                      onChange={(e) =>
+                        handleSectorChange(
+                          localityIndex,
+                          sectorIndex,
+                          e.target.value
+                        )
+                      }
+                      className="block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300"
+                      placeholder="Enter sector"
+                    />
+                    {sectorIndex === locality.sectors.length - 1 && (
+                      <button
+                        type="button"
+                        onClick={() => addSectorToLocality(localityIndex)}
+                        className="ml-2 px-4 py-2 bg-black text-white rounded-md text-nowrap"
+                      >
+                        Add Sector
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {localityIndex === localities.length - 1 && (
                 <button
                   type="button"
                   onClick={addLocality}
-                  className="ml-2 px-3 py-1 bg-blue-500 text-white rounded-md"
+                  className="mt-2 px-3 py-1 bg-white text-black rounded-md"
                 >
-                  Add
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Sectors
-          </label>
-          {sectors.map((sector, index) => (
-            <div key={index} className="flex items-center mt-1">
-              <input
-                type="text"
-                value={sector}
-                onChange={(e) => handleSectorChange(index, e.target.value)}
-                className="block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300"
-                placeholder="Enter sector"
-              />
-              {index === sectors.length - 1 && (
-                <button
-                  type="button"
-                  onClick={addSector}
-                  className="ml-2 px-3 py-1 bg-blue-500 text-white rounded-md"
-                >
-                  Add
+                  Add Locality
                 </button>
               )}
             </div>
@@ -195,7 +190,6 @@ const PreferredWorkLocation = () => {
           <tr>
             <th className="px-4 py-2 border">City</th>
             <th className="px-4 py-2 border">Localities</th>
-            <th className="px-4 py-2 border">Sectors</th>
             <th className="px-4 py-2 border">Actions</th>
           </tr>
         </thead>
@@ -204,12 +198,13 @@ const PreferredWorkLocation = () => {
             <tr key={location.id}>
               <td className="px-4 py-2 border">{location.city}</td>
               <td className="px-4 py-2 border">
-                {(location.localities || []).join(", ")}
+                {location.localities.map((locality, index) => (
+                  <div key={index} className="mb-2">
+                    <strong>{locality.name}:</strong>{" "}
+                    {locality.sectors.join(", ")}
+                  </div>
+                ))}
               </td>
-              <td className="px-4 py-2 border">
-                {(location.sectors || []).join(", ")}
-              </td>
-
               <td className="px-4 py-2 border space-x-2">
                 <button
                   onClick={() => handleEdit(location)}

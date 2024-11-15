@@ -45,7 +45,7 @@ const Navbar = () => {
           <span className="text-xl font-semibold text-white">Dashboard</span>
           <button
             onClick={() => setIsCollapsed(true)}
-            className="p-1 rounded-lg hover:bg-gray-100 lg:hidden"
+            className="p-1 rounded-lg hover:bg-gray-100 hover:text-black lg:hidden"
           >
             <X size={24} />
           </button>
