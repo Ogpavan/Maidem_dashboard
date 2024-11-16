@@ -19,6 +19,7 @@ const Navbar = ({ onLogout }) => {
     { title: "Preferred Skills", href: "/preferredskills" },
     { title: "Work Category", href: "/workcategory" },
     { title: "Preferred Languages", href: "/preferredlanguages" },
+    { title: "Proficiency", href: "/proficiency" },
     { title: "Preferred Work Locations", href: "/preferredworklocations" },
   ];
 

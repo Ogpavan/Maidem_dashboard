@@ -17,6 +17,7 @@ import WorkCategory from "./components/WorkCategory";
 import PreferredLanguage from "./components/PreferredLanguage";
 import PreferredWorkLocation from "./components/PreferredWokLocation";
 import Login from "./components/Login"; // Add a new login component
+import Proficiency from "./components/Proficiency";
 
 function App() {
   // Initialize authentication state from localStorage or default to false
@@ -93,6 +94,7 @@ function App() {
               path="/preferredworklocations"
               element={<AdminRoute element={<PreferredWorkLocation />} />}
             />
+            <Route path="/proficiency" element={<Proficiency />} />
           </Routes>
         </div>
       </div>
