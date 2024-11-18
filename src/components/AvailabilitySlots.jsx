@@ -8,6 +8,7 @@ import {
   doc,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
+import Loader from "./Loader"; // Assuming you are importing the Loader component
 
 const AvailabilitySlots = () => {
   const [slots, setSlots] = useState([]);
@@ -15,16 +16,26 @@ const AvailabilitySlots = () => {
   const [timeRange, setTimeRange] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [loading, setLoading] = useState(true); // Loader state
 
   // Fetch availability slots from Firestore
   useEffect(() => {
     const fetchSlots = async () => {
-      const querySnapshot = await getDocs(collection(db, "availability_slots"));
-      const slotsData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setSlots(slotsData);
+      setLoading(true); // Set loading true when fetching starts
+      try {
+        const querySnapshot = await getDocs(
+          collection(db, "availability_slots")
+        );
+        const slotsData = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setSlots(slotsData);
+      } catch (error) {
+        console.error("Error fetching slots: ", error);
+      } finally {
+        setLoading(false); // Set loading false when fetch completes
+      }
     };
     fetchSlots();
   }, []);
@@ -35,6 +46,7 @@ const AvailabilitySlots = () => {
 
     if (slotName && timeRange) {
       try {
+        setLoading(true); // Set loading true while saving data
         if (isEditing) {
           // Update the existing slot
           const slotDoc = doc(db, "availability_slots", editingId);
@@ -58,6 +70,8 @@ const AvailabilitySlots = () => {
       } catch (error) {
         console.error("Error saving slot: ", error);
         alert("Failed to save slot. Try again.");
+      } finally {
+        setLoading(false); // Set loading false when save completes
       }
     } else {
       alert("Please fill in both fields.");
@@ -67,6 +81,7 @@ const AvailabilitySlots = () => {
   // Handle slot deletion
   const handleDelete = async (id) => {
     try {
+      setLoading(true); // Set loading true while deleting
       const slotDoc = doc(db, "availability_slots", id);
       await deleteDoc(slotDoc);
       alert("Slot deleted successfully!");
@@ -74,6 +89,8 @@ const AvailabilitySlots = () => {
     } catch (error) {
       console.error("Error deleting slot: ", error);
       alert("Failed to delete slot. Try again.");
+    } finally {
+      setLoading(false); // Set loading false when delete completes
     }
   };
 
@@ -83,16 +100,6 @@ const AvailabilitySlots = () => {
     setTimeRange(slot.timeRange);
     setIsEditing(true);
     setEditingId(slot.id);
-  };
-
-  // Fetch slots again to update the list
-  const fetchSlots = async () => {
-    const querySnapshot = await getDocs(collection(db, "availability_slots"));
-    const slotsData = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setSlots(slotsData);
   };
 
   return (
@@ -129,7 +136,7 @@ const AvailabilitySlots = () => {
         </div>
         <button
           type="submit"
-          className="px-8 py-2  bg-black text-white text-sm rounded-md font-semibold hover:bg-black/[0.8] hover:shadow-lg"
+          className="px-8 py-2 bg-black text-white text-sm rounded-md font-semibold hover:bg-black/[0.8] hover:shadow-lg"
         >
           {isEditing ? "Update Slot" : "Add Slot"}
         </button>
@@ -145,26 +152,34 @@ const AvailabilitySlots = () => {
           </tr>
         </thead>
         <tbody>
-          {slots.map((slot) => (
-            <tr key={slot.id}>
-              <td className="px-4 py-2 border">{slot.slotName}</td>
-              <td className="px-4 py-2 border">{slot.timeRange}</td>
-              <td className="px-4 py-2 border space-x-2">
-                <button
-                  onClick={() => handleEdit(slot)}
-                  className="px-8 py-2  bg-yellow-500 text-white text-sm rounded-md font-semibold hover:bg-yellow-500/[0.8] hover:shadow-lg"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(slot.id)}
-                  className="px-8 py-2  bg-red-500 text-white text-sm rounded-md font-semibold hover:bg-red-500/[0.8] hover:shadow-lg"
-                >
-                  Delete
-                </button>
+          {loading ? (
+            <tr>
+              <td colSpan="3" className="text-center py-4">
+                <Loader />
               </td>
             </tr>
-          ))}
+          ) : (
+            slots.map((slot) => (
+              <tr key={slot.id}>
+                <td className="px-4 py-2 border">{slot.slotName}</td>
+                <td className="px-4 py-2 border">{slot.timeRange}</td>
+                <td className="px-4 py-2 border space-x-2">
+                  <button
+                    onClick={() => handleEdit(slot)}
+                    className="px-8 py-2 bg-yellow-500 text-white text-sm rounded-md font-semibold hover:bg-yellow-500/[0.8] hover:shadow-lg"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(slot.id)}
+                    className="px-8 py-2 bg-red-500 text-white text-sm rounded-md font-semibold hover:bg-red-500/[0.8] hover:shadow-lg"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>

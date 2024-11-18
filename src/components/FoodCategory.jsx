@@ -8,12 +8,14 @@ import {
   doc,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
+import Loader from "./Loader";
 
 const FoodCategory = () => {
   const [categories, setCategories] = useState([]);
   const [categoryName, setCategoryName] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [tableLoading, setTableLoading] = useState(false);
 
   // Fetch categories from Firestore
   useEffect(() => {
@@ -22,6 +24,7 @@ const FoodCategory = () => {
 
   // Fetch categories function
   const fetchCategories = async () => {
+    setTableLoading(true); // Show loader
     try {
       const querySnapshot = await getDocs(collection(db, "food_categories"));
       const categoryData = querySnapshot.docs.map((doc) => ({
@@ -32,6 +35,8 @@ const FoodCategory = () => {
     } catch (error) {
       console.error("Error fetching categories: ", error);
       alert("Failed to load categories. Please try again.");
+    } finally {
+      setTableLoading(false); // Hide loader
     }
   };
 
@@ -39,17 +44,29 @@ const FoodCategory = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (categoryName) {
+    if (categoryName.trim()) {
+      // Check for redundancy
+      const isDuplicate = categories.some(
+        (category) =>
+          category.name.toLowerCase().trim() ===
+          categoryName.toLowerCase().trim()
+      );
+
+      if (isDuplicate) {
+        alert("This category already exists. Please add a new one.");
+        return;
+      }
+
       try {
         if (isEditing) {
           // Update existing category
           const categoryDoc = doc(db, "food_categories", editingId);
-          await updateDoc(categoryDoc, { name: categoryName });
+          await updateDoc(categoryDoc, { name: categoryName.trim() });
           alert("Category updated successfully!");
         } else {
           // Add new category
           await addDoc(collection(db, "food_categories"), {
-            name: categoryName,
+            name: categoryName.trim(),
           });
           alert("Category added successfully!");
         }
@@ -123,25 +140,42 @@ const FoodCategory = () => {
           </tr>
         </thead>
         <tbody>
-          {categories.map((category) => (
-            <tr key={category.id}>
-              <td className="px-4 py-2 border">{category.name}</td>
-              <td className="px-4 py-2 border space-x-2">
-                <button
-                  onClick={() => handleEdit(category)}
-                  className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(category.id)}
-                  className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-                >
-                  Delete
-                </button>
+          {tableLoading ? (
+            <tr>
+              <td colSpan={2} className="px-4 py-2 border text-center">
+                <Loader /> {/* Display loader while data is loading */}
               </td>
             </tr>
-          ))}
+          ) : categories.length > 0 ? (
+            categories.map((category) => (
+              <tr key={category.id}>
+                <td className="px-4 py-2 border">{category.name}</td>
+                <td className="px-4 py-2 border space-x-2">
+                  <button
+                    onClick={() => handleEdit(category)}
+                    className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(category.id)}
+                    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td
+                colSpan={2}
+                className="px-4 py-2 border text-center text-gray-500"
+              >
+                No categories found.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>

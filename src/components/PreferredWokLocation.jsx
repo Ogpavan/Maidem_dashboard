@@ -8,6 +8,7 @@ import {
   doc,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
+import Loader from "./Loader";
 
 const PreferredWorkLocation = () => {
   const [locations, setLocations] = useState([]);
@@ -15,17 +16,25 @@ const PreferredWorkLocation = () => {
   const [localities, setLocalities] = useState([{ name: "", sectors: [""] }]);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Define fetchLocations outside useEffect
   const fetchLocations = async () => {
-    const querySnapshot = await getDocs(
-      collection(db, "preferred_work_location")
-    );
-    const locationsData = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setLocations(locationsData);
+    setIsLoading(true);
+    try {
+      const querySnapshot = await getDocs(
+        collection(db, "preferred_work_location")
+      );
+      const locationsData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setLocations(locationsData);
+    } catch (error) {
+      console.error("Error fetching locations: ", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -232,32 +241,40 @@ const PreferredWorkLocation = () => {
           </tr>
         </thead>
         <tbody>
-          {locations.map((location) => (
-            <tr key={location.id}>
-              <td className="px-4 py-2 border">{location.city}</td>
-              <td className="px-4 py-2 border">
-                {location.localities.map((loc, idx) => (
-                  <div key={idx}>
-                    <strong>{loc.name}</strong>: {loc.sectors.join(", ")}
-                  </div>
-                ))}
-              </td>
-              <td className="px-4 py-2 border space-x-2">
-                <button
-                  onClick={() => handleEdit(location)}
-                  className="px-8 py-2 bg-yellow-500 text-white text-sm rounded-md font-semibold hover:bg-yellow-500/[0.8] hover:shadow-lg"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(location.id)}
-                  className="px-8 py-2 bg-red-500 text-white text-sm rounded-md font-semibold hover:bg-red-500/[0.8] hover:shadow-lg"
-                >
-                  Delete
-                </button>
+          {isLoading ? (
+            <tr>
+              <td colSpan="3" className="px-4 py-2 border text-center">
+                <Loader />
               </td>
             </tr>
-          ))}
+          ) : (
+            locations.map((location) => (
+              <tr key={location.id}>
+                <td className="px-4 py-2 border">{location.city}</td>
+                <td className="px-4 py-2 border">
+                  {location.localities.map((loc, idx) => (
+                    <div key={idx}>
+                      <strong>{loc.name}</strong>: {loc.sectors.join(", ")}
+                    </div>
+                  ))}
+                </td>
+                <td className="px-4 py-2 border space-x-2">
+                  <button
+                    onClick={() => handleEdit(location)}
+                    className="px-8 py-2 bg-yellow-500 text-white text-sm rounded-md font-semibold hover:bg-yellow-500/[0.8] hover:shadow-lg"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(location.id)}
+                    className="px-8 py-2 bg-red-500 text-white text-sm rounded-md font-semibold hover:bg-red-500/[0.8] hover:shadow-lg"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>

@@ -41,6 +41,20 @@ const FoodType = () => {
 
     if (typeName.trim()) {
       try {
+        // Check if the food type already exists
+        const querySnapshot = await getDocs(collection(db, "food_types"));
+        const existingFoodType = querySnapshot.docs.find(
+          (doc) =>
+            doc.data().name.toLowerCase() === typeName.trim().toLowerCase()
+        );
+
+        if (existingFoodType) {
+          alert(
+            "This food type already exists. Please enter a different name."
+          );
+          return; // Prevent adding the duplicate entry
+        }
+
         if (isEditing) {
           // Update existing food type
           const foodTypeDoc = doc(db, "food_types", editingId);

@@ -6,63 +6,92 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  query,
+  where,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
+import Loader from "./Loader";
 
 const WorkCategory = () => {
   const [categories, setCategories] = useState([]);
   const [category, setCategory] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Default categories that cannot be deleted
+  // Default categories
   const defaultCategories = ["12 Hours", "24 Hours", "Job Work"];
 
-  // Fetch work categories from Firestore
   useEffect(() => {
-    const fetchCategories = async () => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    setIsLoading(true);
+    try {
       const querySnapshot = await getDocs(collection(db, "work_category"));
       const categoriesData = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
+
       setCategories(categoriesData);
-    };
-    fetchCategories();
-  }, []);
 
-  // Handle form submission for adding or updating a category
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+      // Prevent adding duplicate default categories
+      const existingCategories = categoriesData.map((cat) => cat.category);
+      const missingDefaults = defaultCategories.filter(
+        (defaultCat) => !existingCategories.includes(defaultCat)
+      );
 
-    if (category) {
-      try {
-        if (isEditing) {
-          // Update the existing category
-          const categoryDoc = doc(db, "work_category", editingId);
-          await updateDoc(categoryDoc, { category });
-          alert("Category updated successfully!");
-        } else {
-          // Add a new category
-          await addDoc(collection(db, "work_category"), { category });
-          alert("Category added successfully!");
-        }
+      if (missingDefaults.length > 0) {
+        const batchPromises = missingDefaults.map((defaultCat) =>
+          addDoc(collection(db, "work_category"), { category: defaultCat })
+        );
+        await Promise.all(batchPromises);
 
-        // Reset form and refresh list
-        setCategory("");
-        setIsEditing(false);
-        setEditingId(null);
-        fetchCategories();
-      } catch (error) {
-        console.error("Error saving category: ", error);
-        alert("Failed to save category. Try again.");
+        // Fetch categories again after adding missing defaults
+        const updatedQuerySnapshot = await getDocs(
+          collection(db, "work_category")
+        );
+        const updatedCategories = updatedQuerySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setCategories(updatedCategories);
       }
-    } else {
-      alert("Please enter a category.");
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      alert("Failed to load categories. Try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Handle category deletion (excluding default categories)
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!category) {
+      alert("Please enter a category.");
+      return;
+    }
+
+    try {
+      if (isEditing) {
+        const categoryDoc = doc(db, "work_category", editingId);
+        await updateDoc(categoryDoc, { category });
+        alert("Category updated successfully!");
+      } else {
+        await addDoc(collection(db, "work_category"), { category });
+        alert("Category added successfully!");
+      }
+
+      resetForm();
+      fetchCategories();
+    } catch (error) {
+      console.error("Error saving category:", error);
+      alert("Failed to save category. Try again.");
+    }
+  };
+
   const handleDelete = async (id) => {
     const categoryToDelete = categories.find((cat) => cat.id === id);
     if (defaultCategories.includes(categoryToDelete.category)) {
@@ -76,26 +105,21 @@ const WorkCategory = () => {
       alert("Category deleted successfully!");
       fetchCategories();
     } catch (error) {
-      console.error("Error deleting category: ", error);
+      console.error("Error deleting category:", error);
       alert("Failed to delete category. Try again.");
     }
   };
 
-  // Load selected category data for editing
   const handleEdit = (category) => {
     setCategory(category.category);
     setIsEditing(true);
     setEditingId(category.id);
   };
 
-  // Fetch categories again to update the list
-  const fetchCategories = async () => {
-    const querySnapshot = await getDocs(collection(db, "work_category"));
-    const categoriesData = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setCategories(categoriesData);
+  const resetForm = () => {
+    setCategory("");
+    setIsEditing(false);
+    setEditingId(null);
   };
 
   return (
@@ -113,7 +137,7 @@ const WorkCategory = () => {
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300"
-            placeholder="e.g., 12 hours, 24 hours, Job Work"
+            placeholder="e.g., 12 Hours, 24 Hours, Job Work"
           />
         </div>
         <button
@@ -133,33 +157,52 @@ const WorkCategory = () => {
           </tr>
         </thead>
         <tbody>
-          {categories.map((category) => (
-            <tr key={category.id}>
-              <td className="px-4 py-2 border">{category.category}</td>
-              <td className="px-4 py-2 border space-x-2">
-                <button
-                  onClick={() => handleEdit(category)}
-                  className="px-8 py-2 bg-yellow-500 text-white text-sm rounded-md font-semibold hover:bg-yellow-500/[0.8] hover:shadow-lg"
-                >
-                  Edit
-                </button>
-                {/* Disable Delete for default categories */}
-                <button
-                  onClick={() => handleDelete(category.id)}
-                  className={`px-8 py-2 text-sm rounded-md font-semibold hover:shadow-lg ${
-                    defaultCategories.includes(category.category)
-                      ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                      : "bg-red-500 text-white hover:bg-red-500/[0.8]"
-                  }`}
-                  disabled={defaultCategories.includes(category.category)}
-                >
-                  {defaultCategories.includes(category.category)
-                    ? "Cannot Delete"
-                    : "Delete"}
-                </button>
+          {isLoading ? (
+            <tr>
+              <td
+                colSpan="2"
+                className="px-4 py-4 text-center text-gray-600 italic"
+              >
+                <Loader />
               </td>
             </tr>
-          ))}
+          ) : categories.length > 0 ? (
+            categories.map((cat) => (
+              <tr key={cat.id}>
+                <td className="px-4 py-2 border">{cat.category}</td>
+                <td className="px-4 py-2 border space-x-2">
+                  <button
+                    onClick={() => handleEdit(cat)}
+                    className="px-8 py-2 bg-yellow-500 text-white text-sm rounded-md font-semibold hover:bg-yellow-500/[0.8] hover:shadow-lg"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(cat.id)}
+                    className={`px-8 py-2 text-sm rounded-md font-semibold hover:shadow-lg ${
+                      defaultCategories.includes(cat.category)
+                        ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                        : "bg-red-500 text-white hover:bg-red-500/[0.8]"
+                    }`}
+                    disabled={defaultCategories.includes(cat.category)}
+                  >
+                    {defaultCategories.includes(cat.category)
+                      ? "Cannot Delete"
+                      : "Delete"}
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td
+                colSpan="2"
+                className="px-4 py-4 text-center text-gray-600 italic"
+              >
+                No categories available.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>

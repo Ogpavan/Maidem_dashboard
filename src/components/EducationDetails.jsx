@@ -8,46 +8,51 @@ import {
   doc,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
+import Loader from "./Loader";
 
 const EducationDetails = () => {
   const [educationList, setEducationList] = useState([]);
   const [educationField, setEducationField] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [tableLoading, setTableLoading] = useState(false);
 
   // Fetch education details from Firestore
   useEffect(() => {
-    const fetchEducationDetails = async () => {
+    fetchEducationDetails();
+  }, []);
+
+  const fetchEducationDetails = async () => {
+    setTableLoading(true);
+    try {
       const querySnapshot = await getDocs(collection(db, "education_details"));
       const educationData = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
       setEducationList(educationData);
-    };
-    fetchEducationDetails();
-  }, []);
+    } catch (error) {
+      console.error("Error fetching education details: ", error);
+    } finally {
+      setTableLoading(false);
+    }
+  };
 
-  // Handle form submission for adding or updating an education field
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (educationField) {
       try {
         if (isEditing) {
-          // Update the existing education field
           const educationDoc = doc(db, "education_details", editingId);
           await updateDoc(educationDoc, { educationField });
           alert("Education detail updated successfully!");
         } else {
-          // Add a new education field
           await addDoc(collection(db, "education_details"), {
             educationField,
           });
           alert("Education detail added successfully!");
         }
-
-        // Reset form and refresh list
         setEducationField("");
         setIsEditing(false);
         setEditingId(null);
@@ -61,7 +66,6 @@ const EducationDetails = () => {
     }
   };
 
-  // Handle education field deletion
   const handleDelete = async (id) => {
     try {
       const educationDoc = doc(db, "education_details", id);
@@ -74,21 +78,10 @@ const EducationDetails = () => {
     }
   };
 
-  // Load selected education field data for editing
   const handleEdit = (field) => {
     setEducationField(field.educationField);
     setIsEditing(true);
     setEditingId(field.id);
-  };
-
-  // Fetch education details again to update the list
-  const fetchEducationDetails = async () => {
-    const querySnapshot = await getDocs(collection(db, "education_details"));
-    const educationData = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setEducationList(educationData);
   };
 
   return (
@@ -115,7 +108,7 @@ const EducationDetails = () => {
           type="submit"
           className="px-8 py-2 bg-black text-white text-sm rounded-md font-semibold hover:bg-black/[0.8] hover:shadow-lg"
         >
-          {isEditing ? "Update Education" : "Add  Education "}
+          {isEditing ? "Update Education" : "Add Education"}
         </button>
       </form>
 
@@ -128,25 +121,45 @@ const EducationDetails = () => {
           </tr>
         </thead>
         <tbody>
-          {educationList.map((field) => (
-            <tr key={field.id}>
-              <td className="px-4 py-2 border">{field.educationField}</td>
-              <td className="px-4 py-2 border space-x-2">
-                <button
-                  onClick={() => handleEdit(field)}
-                  className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(field.id)}
-                  className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-                >
-                  Delete
-                </button>
+          {tableLoading ? (
+            <tr>
+              <td
+                colSpan={2}
+                className="px-4 py-2 border text-center text-gray-500"
+              >
+                <Loader />
               </td>
             </tr>
-          ))}
+          ) : educationList.length > 0 ? (
+            educationList.map((field) => (
+              <tr key={field.id}>
+                <td className="px-4 py-2 border">{field.educationField}</td>
+                <td className="px-4 py-2 border space-x-2">
+                  <button
+                    onClick={() => handleEdit(field)}
+                    className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(field.id)}
+                    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td
+                colSpan={2}
+                className="px-4 py-2 border text-center text-gray-500"
+              >
+                No education details found.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>

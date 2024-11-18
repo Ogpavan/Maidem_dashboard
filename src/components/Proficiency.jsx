@@ -8,12 +8,15 @@ import {
   doc,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
+import Loader from "./Loader";
 
 const Proficiency = () => {
   const [proficiencyList, setProficiencyList] = useState([]);
   const [proficiencyName, setProficiencyName] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false); // Loader state for table data
+  const [loadingRowId, setLoadingRowId] = useState(null); // Loader for specific rows
 
   // Fetch proficiencies from Firestore
   useEffect(() => {
@@ -21,49 +24,47 @@ const Proficiency = () => {
   }, []);
 
   const fetchProficiencies = async () => {
-    const querySnapshot = await getDocs(collection(db, "proficiency_options"));
-    const proficiencyData = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setProficiencyList(proficiencyData);
-  };
-
-  // Handle form submission for adding or updating a proficiency
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (proficiencyName) {
-      try {
-        if (isEditing) {
-          // Update the existing proficiency
-          const proficiencyDoc = doc(db, "proficiency_options", editingId);
-          await updateDoc(proficiencyDoc, { name: proficiencyName });
-          alert("Proficiency updated successfully!");
-        } else {
-          // Add a new proficiency
-          await addDoc(collection(db, "proficiency_options"), {
-            name: proficiencyName,
-          });
-          alert("Proficiency added successfully!");
-        }
-
-        // Reset form and refresh list
-        setProficiencyName("");
-        setIsEditing(false);
-        setEditingId(null);
-        fetchProficiencies();
-      } catch (error) {
-        console.error("Error saving proficiency: ", error);
-        alert("Failed to save proficiency. Try again.");
-      }
-    } else {
-      alert("Please provide a proficiency name.");
+    setIsLoading(true);
+    try {
+      const querySnapshot = await getDocs(
+        collection(db, "proficiency_options")
+      );
+      const proficiencyData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setProficiencyList(proficiencyData);
+    } catch (error) {
+      console.error("Error fetching proficiencies: ", error);
+      alert("Failed to load data. Try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Handle proficiency deletion
+  const handleSaveProficiency = async () => {
+    const proficiencyDocRef = isEditing
+      ? doc(db, "proficiency_options", editingId)
+      : collection(db, "proficiency_options");
+
+    try {
+      if (isEditing) {
+        await updateDoc(proficiencyDocRef, { name: proficiencyName });
+        alert("Proficiency updated successfully!");
+      } else {
+        await addDoc(proficiencyDocRef, { name: proficiencyName });
+        alert("Proficiency added successfully!");
+      }
+      resetForm();
+      fetchProficiencies();
+    } catch (error) {
+      console.error("Error saving proficiency: ", error);
+      alert("Failed to save proficiency. Try again.");
+    }
+  };
+
   const handleDelete = async (id) => {
+    setLoadingRowId(id); // Show loader for the specific row
     try {
       const proficiencyDoc = doc(db, "proficiency_options", id);
       await deleteDoc(proficiencyDoc);
@@ -72,14 +73,30 @@ const Proficiency = () => {
     } catch (error) {
       console.error("Error deleting proficiency: ", error);
       alert("Failed to delete proficiency. Try again.");
+    } finally {
+      setLoadingRowId(null); // Reset loader for the specific row
     }
   };
 
-  // Load selected proficiency data for editing
   const handleEdit = (proficiency) => {
     setProficiencyName(proficiency.name);
     setIsEditing(true);
     setEditingId(proficiency.id);
+  };
+
+  const resetForm = () => {
+    setProficiencyName("");
+    setIsEditing(false);
+    setEditingId(null);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!proficiencyName) {
+      alert("Please provide a proficiency name.");
+      return;
+    }
+    handleSaveProficiency();
   };
 
   return (
@@ -117,25 +134,47 @@ const Proficiency = () => {
           </tr>
         </thead>
         <tbody>
-          {proficiencyList.map((proficiency) => (
-            <tr key={proficiency.id}>
-              <td className="px-4 py-2 border">{proficiency.name}</td>
-              <td className="px-4 py-2 border space-x-2">
-                <button
-                  onClick={() => handleEdit(proficiency)}
-                  className="px-8 py-2 bg-yellow-500 text-white text-sm rounded-md font-semibold hover:bg-yellow-500/[0.8] hover:shadow-lg"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(proficiency.id)}
-                  className="px-8 py-2 bg-red-500 text-white text-sm rounded-md font-semibold hover:bg-red-500/[0.8] hover:shadow-lg"
-                >
-                  Delete
-                </button>
+          {isLoading ? (
+            <tr>
+              <td colSpan="2" className="text-center py-4">
+                <Loader />
               </td>
             </tr>
-          ))}
+          ) : proficiencyList.length > 0 ? (
+            proficiencyList.map((proficiency) => (
+              <tr key={proficiency.id}>
+                <td className="px-4 py-2 border">
+                  {loadingRowId === proficiency.id ? (
+                    <Loader />
+                  ) : (
+                    proficiency.name
+                  )}
+                </td>
+                <td className="px-4 py-2 border space-x-2">
+                  <button
+                    onClick={() => handleEdit(proficiency)}
+                    className="px-8 py-2 bg-yellow-500 text-white text-sm rounded-md font-semibold hover:bg-yellow-500/[0.8] hover:shadow-lg"
+                    disabled={loadingRowId === proficiency.id}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(proficiency.id)}
+                    className="px-8 py-2 bg-red-500 text-white text-sm rounded-md font-semibold hover:bg-red-500/[0.8] hover:shadow-lg"
+                    disabled={loadingRowId === proficiency.id}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="2" className="py-6 text-center text-gray-600">
+                No proficiencies available.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>

@@ -18,6 +18,8 @@ import PreferredLanguage from "./components/PreferredLanguage";
 import PreferredWorkLocation from "./components/PreferredWokLocation";
 import Login from "./components/Login"; // Add a new login component
 import Proficiency from "./components/Proficiency";
+import Home from "./components/Home";
+import Maids from "./components/Maids";
 
 function App() {
   // Initialize authentication state from localStorage or default to false
@@ -49,13 +51,14 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen ml-64 bg-[#e2ceaa]">
+      <div className="min-h-screen ml-64 bg-[#f8f8f8] p-16">
         {isAuthenticated && <Navbar onLogout={handleLogout} />}
         <div>
           <Routes>
             <Route path="/login" element={<Login onLogin={handleLogin} />} />
+            <Route path="/" element={<AdminRoute element={<Home />} />} />
             <Route
-              path="/"
+              path="/availabilityslots"
               element={<AdminRoute element={<AvailabilitySlots />} />}
             />
             <Route
@@ -95,6 +98,7 @@ function App() {
               element={<AdminRoute element={<PreferredWorkLocation />} />}
             />
             <Route path="/proficiency" element={<Proficiency />} />
+            <Route path="/maids" element={<Maids />} />
           </Routes>
         </div>
       </div>
