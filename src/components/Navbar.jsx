@@ -15,6 +15,9 @@ import {
   ChefHat,
   Pizza,
   ChevronDown,
+  Home,
+  UserRound,
+  Cog,
 } from "lucide-react"; // Import icons
 import { useLocation, useNavigate, Link } from "react-router-dom"; // Import Link
 import logo from "../assets/logo.png";
@@ -128,7 +131,10 @@ const Navbar = ({ onLogout }) => {
                     : "hover:bg-[#e2ceaa] hover:text-black"
                 }`}
             >
-              <span className="text-black">Home</span>
+              <span className="text-black flex items-center gap-x-2">
+                <Home />
+                Home
+              </span>
             </Link>
 
             {/* Maids Link */}
@@ -141,7 +147,10 @@ const Navbar = ({ onLogout }) => {
                     : "hover:bg-[#e2ceaa] hover:text-black"
                 }`}
             >
-              <span className="text-black">Maids</span>
+              <span className="text-black flex items-center gap-x-2">
+                <UserRound />
+                Maids
+              </span>
             </Link>
 
             {/* Config App Dropdown */}
@@ -150,7 +159,9 @@ const Navbar = ({ onLogout }) => {
                 onClick={() => setIsConfigAppOpen(!isConfigAppOpen)}
                 className="flex items-center gap-4 px-4 py-3 mb-3 rounded-lg w-full text-left"
               >
-                <span className="text-black">Config App</span>
+                <span className="text-black flex items-center gap-x-2">
+                  <Cog /> Config App
+                </span>
                 <span
                   className={`ml-auto ${isConfigAppOpen ? "rotate-180" : ""}`}
                 >

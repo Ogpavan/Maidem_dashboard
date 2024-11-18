@@ -20,6 +20,7 @@ import Login from "./components/Login"; // Add a new login component
 import Proficiency from "./components/Proficiency";
 import Home from "./components/Home";
 import Maids from "./components/Maids";
+import RegisterMaid from "./components/RegisterMaid";
 
 function App() {
   // Initialize authentication state from localStorage or default to false
@@ -99,6 +100,7 @@ function App() {
             />
             <Route path="/proficiency" element={<Proficiency />} />
             <Route path="/maids" element={<Maids />} />
+            <Route path="/registermaid" element={<RegisterMaid />} />
           </Routes>
         </div>
       </div>
