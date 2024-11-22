@@ -4,6 +4,7 @@ import { collection, getDocs, addDoc } from "firebase/firestore";
 
 const RegisterMaid = () => {
   const [skills, setSkills] = useState([]);
+  const [workLocations, setWorkLocations] = useState([]);
   const [educationDetails, setEducationDetails] = useState([]);
   const [foodCategories, setFoodCategories] = useState([]);
   const [foodTypes, setFoodTypes] = useState([]);
@@ -11,24 +12,28 @@ const RegisterMaid = () => {
   const [maritalStatuses, setMaritalStatuses] = useState([]);
   const [preferredLanguages, setPreferredLanguages] = useState([]);
   const [proficiency, setProficiency] = useState([]);
-  const [workCategories, setWorkCategories] = useState([]);
+  const [preferredWorkType, setPreferredWorkType] = useState([]);
   const [availabilitySlots, setAvailabilitySlots] = useState([]);
-  const [preferredWorkLocations, setPreferredWorkLocations] = useState([]);
+  const [locations, setLocations] = useState([]); // Fetched locations
+  const [selectedCity, setSelectedCity] = useState("");
+  const [selectedLocalities, setSelectedLocalities] = useState([]); // Multiple selected localities
+  const [selectedSectors, setSelectedSectors] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
+    mobileNumber: "",
     skill: "",
     educationField: "",
-    foodCategory: "",
-    foodType: "",
+    foodCategory: [],
+    foodType: [],
     maritalStatus: "",
     genderType: "",
-    preferredLanguages: "",
+    preferredLanguages: [],
     proficiency: "",
-    workCategory: "",
+    preferredWorkType: [],
     availabilitySlots: [],
     city: "",
-    locality: "",
-    sector: "",
+    locality: [],
+    sector: [],
     dob: "",
   });
 
@@ -67,7 +72,8 @@ const RegisterMaid = () => {
         maritalStatuses,
         preferredLanguages,
         proficiency,
-        workCategories,
+
+        preferredWorkType,
         availabilitySlots,
         workLocationData,
       ] = await Promise.all([
@@ -79,7 +85,7 @@ const RegisterMaid = () => {
         fetchData("marital_statuses", ["statusName"]),
         fetchData("preferred_languages", ["name"]),
         fetchData("proficiency_options", ["name"]),
-        fetchData("work_category", ["category"]),
+        fetchData("preferred_work_type"),
         fetchData("availability_slots", ["slotName", "timeRange"]),
         fetchData("preferred_work_location"),
       ]);
@@ -92,7 +98,7 @@ const RegisterMaid = () => {
       setMaritalStatuses(maritalStatuses.map((item) => item.statusName));
       setPreferredLanguages(preferredLanguages.map((item) => item.name));
       setProficiency(proficiency.map((item) => item.name));
-      setWorkCategories(workCategories.map((item) => item.category));
+      setPreferredWorkType(preferredWorkType.map((item) => item.workType));
       setAvailabilitySlots(availabilitySlots);
       setPreferredWorkLocations(workLocationData);
     };
@@ -104,18 +110,47 @@ const RegisterMaid = () => {
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-  const handleCityChange = (e) => {
-    const selectedCity = e.target.value;
-    setFormData({ ...formData, city: selectedCity, locality: "", sector: "" });
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const querySnapshot = await getDocs(
+          collection(db, "preferred_work_location")
+        );
+        const data = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setLocations(data);
+      } catch (error) {
+        console.error("Error fetching locations:", error);
+      }
+    };
+
+    fetchLocations();
+  }, []);
+
+  // Handle City Change
+
+  // Filtered Data
+
+  const handlePreferredLanguageChange = (e) => {
+    const { value, checked } = e.target;
+    setFormData((prev) => {
+      const updatedLanguages = checked
+        ? [...prev.preferredLanguages, { language: value, proficiency: "" }]
+        : prev.preferredLanguages.filter((lang) => lang.language !== value);
+      return { ...prev, preferredLanguages: updatedLanguages };
+    });
   };
 
-  const handleLocalityChange = (e) => {
-    const selectedLocality = e.target.value;
-    setFormData({ ...formData, locality: selectedLocality, sector: "" });
-  };
-
-  const handleSectorChange = (e) => {
-    setFormData({ ...formData, sector: e.target.value });
+  const handleLanguageChange = (e, language) => {
+    const { value } = e.target;
+    setFormData((prev) => {
+      const updatedLanguages = prev.preferredLanguages.map((lang) =>
+        lang.language === language ? { ...lang, proficiency: value } : lang
+      );
+      return { ...prev, preferredLanguages: updatedLanguages };
+    });
   };
 
   // Handle form submission
@@ -124,6 +159,7 @@ const RegisterMaid = () => {
 
     const {
       name,
+      mobileNumber,
       dob,
       skill,
       educationField,
@@ -133,64 +169,112 @@ const RegisterMaid = () => {
       maritalStatus,
       preferredLanguages,
       proficiency,
-      workCategory,
+      preferredWorkType,
       availabilitySlots,
-      city,
-      locality,
-      sector,
     } = formData;
 
-    if (!name || !skill || !educationField || !foodCategory) {
+    // Work location data including city, localities, and sectors
+    const workLocationData = {
+      city: {
+        name: selectedCity,
+        localities: selectedLocalities.map((locality) => ({
+          name: locality,
+          sectors: selectedSectors
+            .filter((sector) => sector.locality === locality)
+            .map((sector) => sector.name),
+        })),
+      },
+    };
+
+    // Form validation
+    if (!name || !skill || !educationField || !foodCategory || !selectedCity) {
       alert("Please fill all fields!");
       return;
     }
 
+    const maidData = {
+      name,
+      mobileNumber,
+      dob,
+      skill,
+      educationField,
+      foodCategory,
+      foodType,
+      genderType,
+      maritalStatus,
+      preferredLanguages,
+      proficiency,
+      preferredWorkType,
+      availabilitySlots,
+      ...workLocationData, // Add work location data (city, localities, sectors)
+    };
+
     try {
-      // Reference to your Firestore collection
+      // Reference to the maids collection
       const maidsCollectionRef = collection(db, "maids");
 
-      // Adding the maid's data to Firestore
+      // Save the maid's data, including city and locality details
       await addDoc(maidsCollectionRef, {
-        name,
-        skill,
-        educationField,
-        foodCategory,
-        foodType,
-        genderType,
-        maritalStatus,
-        preferredLanguages,
-        proficiency,
-        workCategory,
-        availabilitySlots,
-        city,
-        locality,
-        sector,
-        dob,
-        createdAt: new Date(), // You can add timestamp if needed
+        ...maidData,
+        createdAt: new Date(), // Add timestamp
       });
 
       alert("Maid registered successfully!");
+
+      // Reset form data after successful save
       setFormData({
         name: "",
+        mobileNumber: "",
         dob: "",
         skill: "",
         educationField: "",
-        foodCategory: "",
-        foodType: "",
+        foodCategory: [],
+        foodType: [],
         genderType: "",
         maritalStatus: "",
         preferredLanguages: "",
         proficiency: "",
-        workCategory: "",
+        workCategory: [],
         availabilitySlots: [],
+        preferredWorkType: [],
         city: "",
         locality: "",
         sector: "",
       });
-      console.log("maid data", formData);
+      setSelectedCity(""); // Reset selected city
+      setSelectedLocalities([]); // Reset selected localities
+      setSelectedSectors([]); // Reset selected sectors
+
+      console.log("Maid data saved successfully:", maidData);
     } catch (error) {
-      console.error("Error registering maid: ", error);
+      console.error("Error saving maid data: ", error);
+      alert("An error occurred while saving the maid data.");
     }
+  };
+
+  // Locality selection toggle function
+  const toggleLocalitySelection = (locality) => {
+    setSelectedLocalities((prevLocalities) =>
+      prevLocalities.includes(locality)
+        ? prevLocalities.filter((loc) => loc !== locality)
+        : [...prevLocalities, locality]
+    );
+  };
+
+  // Sector selection toggle function
+  const toggleSectorSelection = (sector, locality) => {
+    setSelectedSectors((prevSectors) => {
+      const sectorKey = `${locality}-${sector}`;
+      if (
+        prevSectors.some((s) => s.name === sector && s.locality === locality)
+      ) {
+        return prevSectors.filter(
+          (s) => !(s.name === sector && s.locality === locality)
+        );
+      } else {
+        return [...prevSectors, { name: sector, locality: locality }];
+      }
+    });
   };
 
   return (
@@ -224,29 +308,55 @@ const RegisterMaid = () => {
             className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none"
           />
         </div>
-
-        {/* Skills Dropdown */}
         <div>
           <label className="block text-sm font-medium text-gray-700">
-            Skill
+            Mobile Number
           </label>
-          <select
-            name="skill"
-            value={formData.skill}
+          <input
+            type="tel"
+            name="mobileNumber" // Correct the name to match the formData field
+            value={formData.mobileNumber}
             onChange={handleChange}
             className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none"
-          >
-            <option value="" disabled>
-              Select Skill
-            </option>
-            {skills.map((skill) => (
-              <option key={skill.id} value={skill.skill}>
-                {skill.skill}
-              </option>
-            ))}
-          </select>
+            placeholder="Enter maid's Mobile Number"
+            pattern="^[0-9]{10}$" // Optional pattern for 10 digits
+            required // Optional: Make it a required field
+          />
         </div>
-
+        {/* Skills Dropdown */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Skills
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {skills.map((skill) => (
+              <button
+                key={skill.id}
+                type="button"
+                className={`px-4 py-2 border rounded-full focus:outline-none ${
+                  formData.skill.includes(skill.skill)
+                    ? "bg-[#e2ceaa] text-black"
+                    : "bg-gray-200 text-gray-700"
+                }`}
+                onClick={() => {
+                  if (formData.skill.includes(skill.skill)) {
+                    setFormData({
+                      ...formData,
+                      skill: formData.skill.filter((s) => s !== skill.skill),
+                    });
+                  } else {
+                    setFormData({
+                      ...formData,
+                      skill: [...formData.skill, skill.skill],
+                    });
+                  }
+                }}
+              >
+                {skill.skill}
+              </button>
+            ))}
+          </div>
+        </div>
         {/* Education Field Dropdown */}
         <div>
           <label className="block text-sm font-medium text-gray-700">
@@ -268,51 +378,82 @@ const RegisterMaid = () => {
             ))}
           </select>
         </div>
-
         {/* Food Categories Dropdown */}
+        {/* Food Categories Checkboxes */}
         <div>
           <label className="block text-sm font-medium text-gray-700">
-            Food Category
+            Food Categories
           </label>
-          <select
-            name="foodCategory"
-            value={formData.foodCategory}
-            onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none"
-          >
-            <option value="" disabled>
-              Select Food Category
-            </option>
+
+          <div className="mt-1 space-y-2">
             {foodCategories.map((category, index) => (
-              <option key={index} value={category}>
-                {category}
-              </option>
+              <div key={index} className="flex items-center">
+                <input
+                  type="checkbox"
+                  name="foodCategory"
+                  value={category}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setFormData({
+                        ...formData,
+                        foodCategory: [
+                          ...formData.foodCategory,
+                          e.target.value,
+                        ],
+                      });
+                    } else {
+                      setFormData({
+                        ...formData,
+                        foodCategory: formData.foodCategory.filter(
+                          (item) => item !== e.target.value
+                        ),
+                      });
+                    }
+                  }}
+                  checked={formData.foodCategory.includes(category)}
+                  className="mr-2"
+                />
+                <label>{category}</label>
+              </div>
             ))}
-          </select>
+          </div>
         </div>
-
         {/* Food Types Dropdown */}
+        {/* Food Types Checkboxes */}
         <div>
           <label className="block text-sm font-medium text-gray-700">
-            Food Type
+            Food Types
           </label>
-          <select
-            name="foodType"
-            value={formData.foodType}
-            onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none"
-          >
-            <option value="" disabled>
-              Select Food Type
-            </option>
+          <div className="mt-1 space-y-2">
             {foodTypes.map((type, index) => (
-              <option key={index} value={type}>
-                {type}
-              </option>
+              <div key={index} className="flex items-center">
+                <input
+                  type="checkbox"
+                  name="foodTypes"
+                  value={type}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setFormData({
+                        ...formData,
+                        foodType: [...formData.foodType, e.target.value],
+                      });
+                    } else {
+                      setFormData({
+                        ...formData,
+                        foodType: formData.foodType.filter(
+                          (item) => item !== e.target.value
+                        ),
+                      });
+                    }
+                  }}
+                  checked={formData.foodType.includes(type)}
+                  className="mr-2"
+                />
+                <label>{type}</label>
+              </div>
             ))}
-          </select>
+          </div>
         </div>
-
         {/* Gender Types Dropdown */}
         <div>
           <label className="block text-sm font-medium text-gray-700">
@@ -334,7 +475,6 @@ const RegisterMaid = () => {
             ))}
           </select>
         </div>
-
         {/* Marital Status Dropdown */}
         <div>
           <label className="block text-sm font-medium text-gray-700">
@@ -356,109 +496,146 @@ const RegisterMaid = () => {
             ))}
           </select>
         </div>
-
         {/* preffered language */}
         <div>
           <label className="block text-sm font-medium text-gray-700">
-            Preferred Language
+            Preferred Languages
           </label>
-          <select
-            name="preferredLanguage"
-            value={formData.preferredLanguage}
-            onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none"
-          >
-            <option value="" disabled>
-              Select Preferred Language
-            </option>
+          <div className="space-y-2">
             {preferredLanguages.map((language, index) => (
-              <option key={index} value={language}>
-                {language}
-              </option>
-            ))}
-          </select>
-        </div>
+              <div key={index} className="flex items-center">
+                <input
+                  type="checkbox"
+                  value={language}
+                  onChange={handlePreferredLanguageChange}
+                  checked={
+                    Array.isArray(formData.preferredLanguages) &&
+                    formData.preferredLanguages.some(
+                      (lang) => lang.language === language
+                    )
+                  }
+                  className="mr-2"
+                />
+                <label>{language}</label>
 
-        {/* Profiecincy*/}
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Proficiency
-          </label>
-          <select
-            name="proficiency"
-            value={formData.proficiency}
-            onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none"
-          >
-            <option value="" disabled>
-              Select Proficiency
-            </option>
-            {proficiency.map((proficiency, index) => (
-              <option key={index} value={proficiency}>
-                {proficiency}
-              </option>
+                {Array.isArray(formData.preferredLanguages) &&
+                  formData.preferredLanguages.some(
+                    (lang) => lang.language === language
+                  ) && (
+                    <select
+                      onChange={(e) => handleLanguageChange(e, language)}
+                      className="ml-4 px-3 py-2 border rounded-md"
+                    >
+                      <option value="" disabled>
+                        Select Proficiency
+                      </option>
+                      {proficiency.map((level, idx) => (
+                        <option key={idx} value={level}>
+                          {level}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+              </div>
             ))}
-          </select>
+          </div>
         </div>
 
         {/* Work Category Dropdown */}
+        {/* Preferred Work Types Checkboxes */}
         <div>
           <label className="block text-sm font-medium text-gray-700">
-            Work Category
+            Preferred Work Types
           </label>
-          <select
-            name="workCategory"
-            value={formData.workCategory}
-            onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none"
-          >
-            <option value="" disabled>
-              Select Work Category
-            </option>
-            {workCategories.map((category, index) => (
-              <option key={index} value={category}>
-                {category}
-              </option>
+          <div className="mt-1 space-y-2">
+            {preferredWorkType.map((type, index) => (
+              <div key={index} className="flex items-center">
+                <input
+                  type="checkbox"
+                  name="preferredWorkType"
+                  value={type}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setFormData({
+                        ...formData,
+                        preferredWorkType: [
+                          ...formData.preferredWorkType,
+                          e.target.value,
+                        ],
+                      });
+                    } else {
+                      setFormData({
+                        ...formData,
+                        preferredWorkType: formData.preferredWorkType.filter(
+                          (item) => item !== e.target.value
+                        ),
+                      });
+                    }
+                  }}
+                  checked={formData.preferredWorkType.includes(type)}
+                  className="mr-2"
+                />
+                <label>{type}</label>
+              </div>
             ))}
-          </select>
+          </div>
         </div>
+        {/* Availability Slots */}
 
-        {/* Availability Slots */}
-        {/* Availability Slots */}
         <div>
           <label className="block text-sm font-medium text-gray-700">
             Availability Slots
           </label>
-          <select
-            name="availabilitySlots"
-            value={formData.availabilitySlots}
-            onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none"
-          >
-            <option value="" disabled>
-              Select Availability Slot
-            </option>
+          <div className="mt-1 space-y-2">
             {availabilitySlots.map((slot, index) => (
-              <option key={index} value={slot.slotName}>
-                {slot.slotName} - {slot.timeRange}
-              </option>
+              <div key={index} className="flex items-center">
+                <input
+                  type="checkbox"
+                  name="availabilitySlots"
+                  value={slot.slotName} // Store the slot name as the value
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setFormData({
+                        ...formData,
+                        availabilitySlots: [
+                          ...formData.availabilitySlots,
+                          slot.slotName, // Add selected slot to the array
+                        ],
+                      });
+                    } else {
+                      setFormData({
+                        ...formData,
+                        availabilitySlots: formData.availabilitySlots.filter(
+                          (item) => item !== slot.slotName // Remove unselected slot from the array
+                        ),
+                      });
+                    }
+                  }}
+                  checked={formData.availabilitySlots.includes(slot.slotName)} // Check if the slot is selected
+                  className="mr-2"
+                />
+                <label>
+                  {slot.slotName} - {slot.timeRange}{" "}
+                </label>
+              </div>
             ))}
-          </select>
+          </div>
         </div>
-        <div>
+        <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700">
             City
           </label>
           <select
-            name="city"
-            value={formData.city}
-            onChange={handleCityChange}
-            className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none"
+            value={selectedCity}
+            onChange={(e) => {
+              setSelectedCity(e.target.value);
+              setSelectedLocalities([]);
+              setSelectedSectors([]);
+            }}
+            className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"
           >
-            <option value="" disabled>
-              Select City
-            </option>
-            {preferredWorkLocations.map((location) => (
+            <option value="">Select a city</option>
+            {locations.map((location) => (
               <option key={location.id} value={location.city}>
                 {location.city}
               </option>
@@ -466,61 +643,65 @@ const RegisterMaid = () => {
           </select>
         </div>
 
-        {/* Locality Dropdown */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Locality
-          </label>
-          <select
-            name="locality"
-            value={formData.locality}
-            onChange={handleLocalityChange}
-            className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none"
-            disabled={!formData.city}
-          >
-            <option value="" disabled>
-              Select Locality
-            </option>
-            {preferredWorkLocations
-              .find((location) => location.city === formData.city)
-              ?.localities?.map((locality, index) => (
-                <option key={index} value={locality.name}>
-                  {locality.name}
-                </option>
+        {/* Locality Checkboxes */}
+        {selectedCity && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Localities
+            </label>
+            {locations
+              .find((location) => location.city === selectedCity)
+              ?.localities.map((locality, index) => (
+                <div key={index} className="flex items-center mb-2">
+                  <input
+                    type="checkbox"
+                    id={`locality-${index}`}
+                    checked={selectedLocalities.includes(locality.name)}
+                    onChange={() => toggleLocalitySelection(locality.name)}
+                    className="mr-2"
+                  />
+                  <label htmlFor={`locality-${index}`}>{locality.name}</label>
+                </div>
               ))}
-          </select>
-        </div>
+          </div>
+        )}
 
-        {/* Sector Dropdown */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Sector
-          </label>
-          <select
-            name="sector"
-            value={formData.sector}
-            onChange={handleSectorChange}
-            className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none"
-            disabled={!formData.locality}
-          >
-            <option value="" disabled>
-              Select Sector
-            </option>
-            {preferredWorkLocations
-              .find((location) => location.city === formData.city)
-              ?.localities.find(
-                (locality) => locality.name === formData.locality
-              )
-              ?.sectors.map((sector, index) => (
-                <option key={index} value={sector}>
-                  {sector}
-                </option>
-              ))}
-          </select>
-        </div>
+        {/* Sector Checkboxes */}
+        {selectedLocalities.length > 0 && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Sectors
+            </label>
+            {selectedLocalities.map((locality, locIndex) => (
+              <div key={locIndex} className="mb-2">
+                <p className="font-medium text-gray-600">{locality}</p>
+                {locations
+                  .find((location) => location.city === selectedCity)
+                  ?.localities.find((loc) => loc.name === locality)
+                  ?.sectors.map((sector, secIndex) => (
+                    <div key={secIndex} className="flex items-center mb-1">
+                      <input
+                        type="checkbox"
+                        id={`sector-${locIndex}-${secIndex}`}
+                        checked={selectedSectors.some(
+                          (s) => s.name === sector && s.locality === locality
+                        )}
+                        onChange={() => toggleSectorSelection(sector, locality)}
+                        className="mr-2"
+                      />
+                      <label htmlFor={`sector-${locIndex}-${secIndex}`}>
+                        {sector}
+                      </label>
+                    </div>
+                  ))}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Save Button */}
 
         {/* Submit Button */}
-
         <button
           type="submit"
           className="px-8 py-3 bg-black text-white text-md rounded-md  font-semibold hover:bg-black/[0.8] hover:shadow-lg w-full"

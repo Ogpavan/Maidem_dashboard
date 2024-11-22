@@ -62,7 +62,7 @@ const Navbar = ({ onLogout }) => {
     },
     {
       title: "Work Category",
-      to: "/workcategory",
+      to: "/preferredworktype",
       icon: <Layers size={20} />,
     },
     {
