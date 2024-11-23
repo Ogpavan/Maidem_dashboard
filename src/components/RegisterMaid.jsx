@@ -20,6 +20,7 @@ const RegisterMaid = () => {
   const [selectedSectors, setSelectedSectors] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
+    maidStory: "",
     mobileNumber: "",
     skill: "",
     educationField: "",
@@ -159,6 +160,7 @@ const RegisterMaid = () => {
 
     const {
       name,
+      maidStory,
       mobileNumber,
       dob,
       skill,
@@ -194,6 +196,7 @@ const RegisterMaid = () => {
 
     const maidData = {
       name,
+      maidStory,
       mobileNumber,
       dob,
       skill,
@@ -224,6 +227,7 @@ const RegisterMaid = () => {
       // Reset form data after successful save
       setFormData({
         name: "",
+        maidStory: "",
         mobileNumber: "",
         dob: "",
         skill: "",
@@ -295,6 +299,7 @@ const RegisterMaid = () => {
             placeholder="Enter maid's name"
           />
         </div>
+
         {/* Date of Birth Input */}
         <div>
           <label className="block text-sm font-medium text-gray-700">
@@ -323,6 +328,20 @@ const RegisterMaid = () => {
             required // Optional: Make it a required field
           />
         </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Maid Story
+          </label>
+          <textarea
+            name="maidStory"
+            value={formData.maidStory}
+            onChange={handleChange}
+            className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none"
+            placeholder="Enter maid's story"
+          ></textarea>
+        </div>
+
         {/* Skills Dropdown */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">

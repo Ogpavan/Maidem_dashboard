@@ -23,7 +23,7 @@ const Maids = () => {
         }));
         setMaids(maidsList);
         setLoading(false);
-        console.log(maidsList);
+        console.log("Fetched maids:", maidsList); // Check the structure of the fetched maids data
       } catch (error) {
         console.error("Error fetching maids:", error);
         setLoading(false);
@@ -54,7 +54,7 @@ const Maids = () => {
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-10">
-        <h1 className="text-3xl font-bold ">Available Maids</h1>
+        <h1 className="text-3xl font-bold">Available Maids</h1>
         <Link to={"/registermaid"}>
           <button className="px-8 py-2 bg-black text-white text-sm rounded-md font-semibold hover:bg-black/[0.8] hover:shadow-lg">
             Register New Maid
@@ -96,74 +96,130 @@ const Maids = () => {
       </div>
 
       {/* Modal for showing maid details */}
-      {/* Modal for showing maid details */}
       {selectedMaid && (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-11/12 md:w-2/3 lg:w-1/2 p-6">
-            <div className="text-right">
-              <button
-                className="text-gray-500 hover:text-gray-700"
-                onClick={() => setSelectedMaid(null)}
-              >
-                ✖
-              </button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-lg mx-4 md:mx-auto p-6 relative h-[80vh] overflow-y-auto">
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              onClick={() => setSelectedMaid(null)}
+            >
+              ✖
+            </button>
+            <h2 className="text-2xl font-bold text-center mb-6">
+              {selectedMaid.name}
+            </h2>
+            <div className="space-y-4">
+              <p>
+                <strong>Story:</strong> {selectedMaid.maidStory}
+              </p>
+
+              <p>
+                <strong>Gender:</strong> {selectedMaid.genderType}
+              </p>
+              <p>
+                <strong>Age:</strong>{" "}
+                {selectedMaid.dob
+                  ? new Date().getFullYear() -
+                    new Date(selectedMaid.dob).getFullYear()
+                  : "N/A"}
+              </p>
+              <p>
+                <strong>Mobile Number:</strong>{" "}
+                {selectedMaid.mobileNumber || "N/A"}
+              </p>
+              <p>
+                <strong>Education:</strong> {selectedMaid.educationField}
+              </p>
+              <p>
+                <strong>Marital Status:</strong> {selectedMaid.maritalStatus}
+              </p>
+              <p>
+                <strong>Skills:</strong>
+                <ul className="list-disc list-inside">
+                  {selectedMaid.skill && selectedMaid.skill.length > 0
+                    ? selectedMaid.skill.map((item, index) => (
+                        <li key={index}>{item}</li>
+                      ))
+                    : "N/A"}
+                </ul>
+              </p>
+
+              <p>
+                <strong>Food Category:</strong>
+                <ul className="list-disc list-inside">
+                  {selectedMaid.foodCategory &&
+                  selectedMaid.foodCategory.length > 0
+                    ? selectedMaid.foodCategory.map((item, index) => (
+                        <li key={index}>{item}</li>
+                      ))
+                    : "N/A"}
+                </ul>
+              </p>
+
+              <p>
+                <strong>Food Type:</strong>
+                <ul className="list-disc list-inside">
+                  {selectedMaid.foodType && selectedMaid.foodType.length > 0
+                    ? selectedMaid.foodType.map((item, index) => (
+                        <li key={index}>{item}</li>
+                      ))
+                    : "N/A"}
+                </ul>
+              </p>
+
+              <p>
+                <strong>Preferred Languages:</strong>
+                <ul className="list-disc list-inside">
+                  {selectedMaid.preferredLanguages &&
+                  selectedMaid.preferredLanguages.length > 0
+                    ? selectedMaid.preferredLanguages.map((lang, index) => (
+                        <li key={index}>
+                          {lang.language} - {lang.proficiency}
+                        </li>
+                      ))
+                    : "N/A"}
+                </ul>
+              </p>
+              <p>
+                <strong>Preferred Work Type:</strong>
+                <ul className="list-disc list-inside">
+                  {selectedMaid.preferredWorkType &&
+                  selectedMaid.preferredWorkType.length > 0
+                    ? selectedMaid.preferredWorkType.map((work, index) => (
+                        <li key={index}>{work}</li>
+                      ))
+                    : "N/A"}
+                </ul>
+              </p>
+              <p>
+                <strong>Availability Slots:</strong>
+                <ul className="list-disc list-inside">
+                  {Array.isArray(selectedMaid.availabilitySlots) &&
+                  selectedMaid.availabilitySlots.length > 0
+                    ? selectedMaid.availabilitySlots.map((slot, index) => (
+                        <li key={index}>{slot}</li>
+                      ))
+                    : "No availability slots listed"}
+                </ul>
+              </p>
+              <p>
+                <strong>City:</strong> {selectedMaid.city?.name || "N/A"}
+              </p>
+              <p>
+                <strong>Localities:</strong>
+                <ul className="list-disc list-inside">
+                  {selectedMaid.city?.localities &&
+                  selectedMaid.city.localities.length > 0
+                    ? selectedMaid.city.localities.map((locality, index) => (
+                        <li key={index}>
+                          {locality.name} - Sectors:{" "}
+                          {locality.sectors.join(", ")}
+                        </li>
+                      ))
+                    : "No localities listed"}
+                </ul>
+              </p>
             </div>
-            <h2 className="text-2xl font-bold mb-4">{selectedMaid.name}</h2>
-
-            {/* Maid details */}
-            <p>
-              <strong>Gender:</strong> {selectedMaid.genderType}
-            </p>
-            <p>
-              <strong>Age:</strong>{" "}
-              {selectedMaid.dob
-                ? new Date().getFullYear() -
-                  new Date(selectedMaid.dob).getFullYear()
-                : "N/A"}
-            </p>
-
-            <p>
-              <strong>Education:</strong> {selectedMaid.educationField}
-            </p>
-            <p>
-              <strong>Marital Status:</strong> {selectedMaid.maritalStatus}
-            </p>
-            <p>
-              <strong>Proficiency:</strong> {selectedMaid.proficiency}
-            </p>
-            <p>
-              <strong>Food Category:</strong> {selectedMaid.foodCategory}
-            </p>
-            <p>
-              <strong>Food Type:</strong> {selectedMaid.foodType}
-            </p>
-            <p>
-              <strong>Skills:</strong> {selectedMaid.skill}
-            </p>
-            <p>
-              <strong>Sector:</strong> {selectedMaid.sector}
-            </p>
-            <p>
-              <strong>Work Category:</strong> {selectedMaid.workCategory}
-            </p>
-            <p>
-              <strong>Working City:</strong> {selectedMaid.city}
-            </p>
-            <p>
-              <strong>Working Locality:</strong> {selectedMaid.locality}
-            </p>
-
-            {/* Availability Slots */}
-            <p>
-              <strong>Availability Slots:</strong>
-            </p>
-            <ul>
-              {selectedMaid.availabilitySlots ? (
-                <li>{selectedMaid.availabilitySlots}</li>
-              ) : (
-                <li>No availability slots listed</li>
-              )}
-            </ul>
           </div>
         </div>
       )}
