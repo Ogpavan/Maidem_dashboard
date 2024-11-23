@@ -131,26 +131,36 @@ const RegisterMaid = () => {
   }, []);
 
   // Handle City Change
+  const handleWorkTypeChange = (e) => {
+    const { value, checked } = e.target;
+    setFormData((prevData) => {
+      const updatedWorkTypes = checked
+        ? [...prevData.preferredWorkType, value]
+        : prevData.preferredWorkType.filter((type) => type !== value);
 
+      return { ...prevData, preferredWorkType: updatedWorkTypes };
+    });
+  };
   // Filtered Data
 
   const handlePreferredLanguageChange = (e) => {
     const { value, checked } = e.target;
-    setFormData((prev) => {
+    setFormData((prevData) => {
       const updatedLanguages = checked
-        ? [...prev.preferredLanguages, { language: value, proficiency: "" }]
-        : prev.preferredLanguages.filter((lang) => lang.language !== value);
-      return { ...prev, preferredLanguages: updatedLanguages };
+        ? [...prevData.preferredLanguages, { language: value, proficiency: "" }]
+        : prevData.preferredLanguages.filter((lang) => lang.language !== value);
+
+      return { ...prevData, preferredLanguages: updatedLanguages };
     });
   };
 
   const handleLanguageChange = (e, language) => {
     const { value } = e.target;
-    setFormData((prev) => {
-      const updatedLanguages = prev.preferredLanguages.map((lang) =>
+    setFormData((prevData) => {
+      const updatedLanguages = prevData.preferredLanguages.map((lang) =>
         lang.language === language ? { ...lang, proficiency: value } : lang
       );
-      return { ...prev, preferredLanguages: updatedLanguages };
+      return { ...prevData, preferredLanguages: updatedLanguages };
     });
   };
 
@@ -342,6 +352,27 @@ const RegisterMaid = () => {
           ></textarea>
         </div>
 
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Education Field
+          </label>
+          <select
+            name="educationField"
+            value={formData.educationField}
+            onChange={handleChange}
+            className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none"
+          >
+            <option value="" disabled>
+              Select Education Field
+            </option>
+            {educationDetails.map((education, index) => (
+              <option key={index} value={education}>
+                {education}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Skills Dropdown */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -376,103 +407,85 @@ const RegisterMaid = () => {
             ))}
           </div>
         </div>
-        {/* Education Field Dropdown */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Education Field
-          </label>
-          <select
-            name="educationField"
-            value={formData.educationField}
-            onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none"
-          >
-            <option value="" disabled>
-              Select Education Field
-            </option>
-            {educationDetails.map((education, index) => (
-              <option key={index} value={education}>
-                {education}
-              </option>
-            ))}
-          </select>
-        </div>
-        {/* Food Categories Dropdown */}
-        {/* Food Categories Checkboxes */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Food Categories
-          </label>
 
-          <div className="mt-1 space-y-2">
-            {foodCategories.map((category, index) => (
-              <div key={index} className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="foodCategory"
-                  value={category}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setFormData({
-                        ...formData,
-                        foodCategory: [
-                          ...formData.foodCategory,
-                          e.target.value,
-                        ],
-                      });
-                    } else {
-                      setFormData({
-                        ...formData,
-                        foodCategory: formData.foodCategory.filter(
-                          (item) => item !== e.target.value
-                        ),
-                      });
-                    }
-                  }}
-                  checked={formData.foodCategory.includes(category)}
-                  className="mr-2"
-                />
-                <label>{category}</label>
+        {/* Conditionally render Food Categories and Food Types when 'Cooking' is selected */}
+        {formData.skill.includes("Cooking") && (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Food Categories
+              </label>
+
+              <div className="mt-1 space-y-2">
+                {foodCategories.map((category, index) => (
+                  <div key={index} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="foodCategory"
+                      value={category}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFormData({
+                            ...formData,
+                            foodCategory: [
+                              ...formData.foodCategory,
+                              e.target.value,
+                            ],
+                          });
+                        } else {
+                          setFormData({
+                            ...formData,
+                            foodCategory: formData.foodCategory.filter(
+                              (item) => item !== e.target.value
+                            ),
+                          });
+                        }
+                      }}
+                      checked={formData.foodCategory.includes(category)}
+                      className="mr-2"
+                    />
+                    <label>{category}</label>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-        {/* Food Types Dropdown */}
-        {/* Food Types Checkboxes */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Food Types
-          </label>
-          <div className="mt-1 space-y-2">
-            {foodTypes.map((type, index) => (
-              <div key={index} className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="foodTypes"
-                  value={type}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setFormData({
-                        ...formData,
-                        foodType: [...formData.foodType, e.target.value],
-                      });
-                    } else {
-                      setFormData({
-                        ...formData,
-                        foodType: formData.foodType.filter(
-                          (item) => item !== e.target.value
-                        ),
-                      });
-                    }
-                  }}
-                  checked={formData.foodType.includes(type)}
-                  className="mr-2"
-                />
-                <label>{type}</label>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Food Types
+              </label>
+              <div className="mt-1 space-y-2">
+                {foodTypes.map((type, index) => (
+                  <div key={index} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="foodTypes"
+                      value={type}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFormData({
+                            ...formData,
+                            foodType: [...formData.foodType, e.target.value],
+                          });
+                        } else {
+                          setFormData({
+                            ...formData,
+                            foodType: formData.foodType.filter(
+                              (item) => item !== e.target.value
+                            ),
+                          });
+                        }
+                      }}
+                      checked={formData.foodType.includes(type)}
+                      className="mr-2"
+                    />
+                    <label>{type}</label>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          </>
+        )}
         {/* Gender Types Dropdown */}
         <div>
           <label className="block text-sm font-medium text-gray-700">
@@ -561,85 +574,76 @@ const RegisterMaid = () => {
         </div>
 
         {/* Work Category Dropdown */}
-        {/* Preferred Work Types Checkboxes */}
         <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Preferred Work Types
-          </label>
-          <div className="mt-1 space-y-2">
-            {preferredWorkType.map((type, index) => (
-              <div key={index} className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="preferredWorkType"
-                  value={type}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setFormData({
-                        ...formData,
-                        preferredWorkType: [
-                          ...formData.preferredWorkType,
-                          e.target.value,
-                        ],
-                      });
-                    } else {
-                      setFormData({
-                        ...formData,
-                        preferredWorkType: formData.preferredWorkType.filter(
-                          (item) => item !== e.target.value
-                        ),
-                      });
-                    }
-                  }}
-                  checked={formData.preferredWorkType.includes(type)}
-                  className="mr-2"
-                />
-                <label>{type}</label>
-              </div>
-            ))}
+          {/* Preferred Work Types */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Preferred Work Types
+            </label>
+            <div className="mt-1 space-y-2">
+              {preferredWorkType.map((type, index) => (
+                <div key={index} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="preferredWorkType"
+                    value={type}
+                    onChange={handleWorkTypeChange}
+                    checked={formData.preferredWorkType.includes(type)}
+                    className="mr-2"
+                  />
+                  <label>{type}</label>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-        {/* Availability Slots */}
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Availability Slots
-          </label>
-          <div className="mt-1 space-y-2">
-            {availabilitySlots.map((slot, index) => (
-              <div key={index} className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="availabilitySlots"
-                  value={slot.slotName} // Store the slot name as the value
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setFormData({
-                        ...formData,
-                        availabilitySlots: [
-                          ...formData.availabilitySlots,
-                          slot.slotName, // Add selected slot to the array
-                        ],
-                      });
-                    } else {
-                      setFormData({
-                        ...formData,
-                        availabilitySlots: formData.availabilitySlots.filter(
-                          (item) => item !== slot.slotName // Remove unselected slot from the array
-                        ),
-                      });
-                    }
-                  }}
-                  checked={formData.availabilitySlots.includes(slot.slotName)} // Check if the slot is selected
-                  className="mr-2"
-                />
-                <label>
-                  {slot.slotName} - {slot.timeRange}{" "}
-                </label>
+          {/* Conditionally render Availability Slots when 'Job Work' is selected */}
+          {formData.preferredWorkType.includes("Job Work") && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Availability Slots
+              </label>
+              <div className="mt-1 space-y-2">
+                {availabilitySlots.map((slot, index) => (
+                  <div key={index} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="availabilitySlots"
+                      value={slot.slotName}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFormData({
+                            ...formData,
+                            availabilitySlots: [
+                              ...formData.availabilitySlots,
+                              slot.slotName,
+                            ],
+                          });
+                        } else {
+                          setFormData({
+                            ...formData,
+                            availabilitySlots:
+                              formData.availabilitySlots.filter(
+                                (item) => item !== slot.slotName
+                              ),
+                          });
+                        }
+                      }}
+                      checked={formData.availabilitySlots.includes(
+                        slot.slotName
+                      )}
+                      className="mr-2"
+                    />
+                    <label>
+                      {slot.slotName} - {slot.timeRange}
+                    </label>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
+
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700">
             City
