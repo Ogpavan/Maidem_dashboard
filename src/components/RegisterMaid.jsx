@@ -25,7 +25,7 @@ const RegisterMaid = () => {
     skill: "",
     educationField: "",
     foodCategory: [],
-    foodType: [],
+    foodType: "",
     maritalStatus: "",
     genderType: "",
     preferredLanguages: [],
@@ -243,7 +243,7 @@ const RegisterMaid = () => {
         skill: "",
         educationField: "",
         foodCategory: [],
-        foodType: [],
+        foodType: "",
         genderType: "",
         maritalStatus: "",
         preferredLanguages: "",
@@ -454,35 +454,21 @@ const RegisterMaid = () => {
               <label className="block text-sm font-medium text-gray-700">
                 Food Types
               </label>
-              <div className="mt-1 space-y-2">
+              <select
+                name="foodType"
+                value={formData.foodType}
+                onChange={(e) =>
+                  setFormData({ ...formData, foodType: e.target.value })
+                }
+                className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none"
+              >
+                <option value="">Select a Food Type</option>
                 {foodTypes.map((type, index) => (
-                  <div key={index} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="foodTypes"
-                      value={type}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setFormData({
-                            ...formData,
-                            foodType: [...formData.foodType, e.target.value],
-                          });
-                        } else {
-                          setFormData({
-                            ...formData,
-                            foodType: formData.foodType.filter(
-                              (item) => item !== e.target.value
-                            ),
-                          });
-                        }
-                      }}
-                      checked={formData.foodType.includes(type)}
-                      className="mr-2"
-                    />
-                    <label>{type}</label>
-                  </div>
+                  <option key={index} value={type}>
+                    {type}
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
           </>
         )}

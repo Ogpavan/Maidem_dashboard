@@ -158,13 +158,7 @@ const Maids = () => {
 
               <p>
                 <strong>Food Type:</strong>
-                <ul className="list-disc list-inside">
-                  {selectedMaid.foodType && selectedMaid.foodType.length > 0
-                    ? selectedMaid.foodType.map((item, index) => (
-                        <li key={index}>{item}</li>
-                      ))
-                    : "N/A"}
-                </ul>
+                <span>{selectedMaid.foodType || "N/A"}</span>
               </p>
 
               <p>
