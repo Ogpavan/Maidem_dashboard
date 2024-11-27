@@ -18,6 +18,7 @@ import {
   Home,
   UserRound,
   Cog,
+  UserRoundCheck,
 } from "lucide-react"; // Import icons
 import { useLocation, useNavigate, Link } from "react-router-dom"; // Import Link
 import logo from "../assets/logo.png";
@@ -191,6 +192,22 @@ const Navbar = ({ onLogout }) => {
                   {/* Logout button inside dropdown */}
                 </div>
               )}
+
+              <Link
+                to="/referredmaids"
+                className={`flex items-center gap-4 px-4 py-3 mb-3 rounded-lg 
+                ${
+                  location.pathname === "/referredmaids"
+                    ? "bg-[#e2ceaa] text-black"
+                    : "hover:bg-[#e2ceaa] hover:text-black"
+                }`}
+              >
+                <span className="text-black flex items-center gap-x-2">
+                  <UserRoundCheck />
+                  Referrals
+                </span>
+              </Link>
+
               <div className="mt-4">
                 <button
                   onClick={handleLogout}

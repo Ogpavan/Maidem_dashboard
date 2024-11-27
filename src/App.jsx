@@ -21,6 +21,7 @@ import Home from "./components/Home";
 import Maids from "./components/Maids";
 import RegisterMaid from "./components/RegisterMaid";
 import PreferredWorkType from "./components/PreferredWorkType";
+import ReferredMaids from "./components/ReferredMaids";
 
 function App() {
   // Initialize authentication state from localStorage or default to false
@@ -101,6 +102,7 @@ function App() {
             <Route path="/proficiency" element={<Proficiency />} />
             <Route path="/maids" element={<Maids />} />
             <Route path="/registermaid" element={<RegisterMaid />} />
+            <Route path="/referredmaids" element={<ReferredMaids />} />
           </Routes>
         </div>
       </div>
