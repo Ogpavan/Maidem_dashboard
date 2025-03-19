@@ -22,6 +22,7 @@ import Maids from "./components/Maids";
 import RegisterMaid from "./components/RegisterMaid";
 import PreferredWorkType from "./components/PreferredWorkType";
 import ReferredMaids from "./components/ReferredMaids";
+import CloudinaryDetails from "./components/CloudinaryDetails";
 
 function App() {
   // Initialize authentication state from localStorage or default to false
@@ -103,6 +104,7 @@ function App() {
             <Route path="/maids" element={<Maids />} />
             <Route path="/registermaid" element={<RegisterMaid />} />
             <Route path="/referredmaids" element={<ReferredMaids />} />
+            <Route path="/cloudinarydetails" element={<CloudinaryDetails />} />
           </Routes>
         </div>
       </div>

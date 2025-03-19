@@ -81,6 +81,11 @@ const Navbar = ({ onLogout }) => {
       to: "/preferredworklocations",
       icon: <MapPin size={20} />,
     },
+    {
+      title: "Cloudinary Details",
+      to: "/cloudinarydetails",
+      icon: <UserRound size={20} />,
+    },
   ];
 
   const handleLogout = () => {
